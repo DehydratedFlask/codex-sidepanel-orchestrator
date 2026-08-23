@@ -15,7 +15,7 @@ Codex Side-Panel Orchestrator is an open-source agent skill for the ChatGPT/Code
 
 - **Codex-to-OpenCode delegation:** Codex plans and supervises while OpenCode implements.
 - **Existing-session only:** the skill never creates or substitutes an OpenCode coding session.
-- **OpenCode MCP integration:** continues the selected session through `opencode_reply`.
+- **OpenCode MCP integration:** uses OpenCode's supported shared-server TUI controls, preserving the model selected in the panel.
 - **Live side-panel detection:** rejects stale MCP history when the OpenCode TUI is closed.
 - **Cross-platform setup:** supports macOS and native Windows desktop workflows, with fail-closed Linux detection.
 - **Read-only orchestration:** Codex does not edit project files during delegated implementation.
@@ -24,10 +24,11 @@ Codex Side-Panel Orchestrator is an open-source agent skill for the ChatGPT/Code
 
 OpenCode MCP can retain sessions after its terminal UI closes. Session history alone therefore cannot prove that the OpenCode session in the ChatGPT/Codex desktop side panel is still open.
 
-This skill uses two independent gates before delegating:
+This skill uses three independent gates before delegating:
 
-1. A read-only process-tree check finds an interactive `opencode` TUI beneath the ChatGPT desktop app.
-2. OpenCode MCP must expose an existing session for the current repository.
+1. A read-only process-tree check finds exactly one interactive `opencode attach <url>` TUI beneath the ChatGPT desktop app.
+2. OpenCode MCP must use that same server URL and expose an existing session for the repository.
+3. The selected session must be idle and match the project and, when supplied, the user's title or ID.
 
 If either gate fails, Codex produces a plan and stops.
 
@@ -70,8 +71,19 @@ Run `opencode` once and complete its provider authentication before delegating w
 
 ### 2. Connect OpenCode MCP to Codex
 
+Start the shared OpenCode server in a regular terminal and leave it running:
+
 ```bash
-codex mcp add opencode -- npx -y opencode-mcp
+opencode serve --hostname 127.0.0.1 --port 4096
+```
+
+Then register the MCP bridge against that server. Disabling auto-serve makes connection mistakes fail visibly instead of silently starting a second backend:
+
+```bash
+codex mcp add opencode \
+  --env OPENCODE_BASE_URL=http://127.0.0.1:4096 \
+  --env OPENCODE_AUTO_SERVE=false \
+  -- npx -y opencode-mcp
 ```
 
 Restart the ChatGPT/Codex desktop app after changing MCP configuration. Verify the registration with:
@@ -86,6 +98,7 @@ For longer implementation tasks, you can set timeouts in `~/.codex/config.toml`:
 [mcp_servers.opencode]
 command = "npx"
 args = ["-y", "opencode-mcp"]
+env = { OPENCODE_BASE_URL = "http://127.0.0.1:4096", OPENCODE_AUTO_SERVE = "false" }
 startup_timeout_sec = 30
 tool_timeout_sec = 600
 default_tools_approval_mode = "writes"
@@ -113,14 +126,20 @@ Restart Codex after installing a new skill.
 
 ### 4. Open the session you want Codex to use
 
-In the ChatGPT/Codex desktop side-panel terminal:
+In the ChatGPT/Codex desktop side-panel terminal, attach the TUI to the same server:
 
 ```bash
 cd /path/to/your/project
-opencode
+opencode attach http://127.0.0.1:4096 --dir "$PWD"
 ```
 
-Leave that TUI open. The OpenCode MCP server must be able to see its existing session in the same project directory.
+PowerShell equivalent:
+
+```powershell
+opencode attach http://127.0.0.1:4096 --dir (Get-Location).Path
+```
+
+Leave that TUI open and use only one attached OpenCode TUI at a time for unambiguous control.
 
 ### 5. Delegate
 
@@ -138,15 +157,15 @@ Plan this refactor, then have my open side-panel OpenCode session implement and 
 
 ## What it does
 
-| Side-panel TUI | Matching MCP session | Result |
-|---|---|---|
-| Open | Found | Codex plans; OpenCode implements and tests; Codex monitors |
-| Open | Missing | Codex stops with the plan and asks you to open/select the project session |
-| Closed | Persisted session exists | Codex stops; stale history does not pass the live UI gate |
-| Closed | Missing | Codex stops |
-| Multiple matches | Multiple | Codex asks you to choose by title/session ID |
+| Side-panel TUI | Shared server | Matching MCP session | Result |
+|---|---|---|---|
+| One attached | Same URL | Found | Codex plans; OpenCode implements and tests; Codex monitors |
+| Plain/unattached | No | Found or missing | Codex stops; visible history is not a live control channel |
+| One attached | Same URL | Missing | Codex stops with the plan and asks you to open/select the project session |
+| Closed | Any | Persisted or missing | Codex stops; stale history does not pass the live UI gate |
+| Multiple TUIs | Any | Any | Codex stops because TUI delivery is ambiguous |
 
-Codex communicates through `opencode_reply`, which continues the chosen session. It does not use session-creation tools, and it leaves the session's existing model/provider selection untouched.
+Codex uses `opencode_tui_append_prompt` followed by `opencode_tui_submit_prompt` on the shared server. This drives the attached panel and preserves its selected model and agent. The skill does not use the headless `opencode_reply` path for side-panel delegation.
 
 ## Verify the live-session detector
 
@@ -162,7 +181,7 @@ Windows PowerShell:
 python "$HOME\.agents\skills\codex-sidepanel-orchestrator\scripts\detect_sidepanel_opencode.py" --pretty
 ```
 
-When the side-panel TUI is open, the command returns JSON with `"open": true` and exits `0`. If it is closed, it returns `"open": false` and exits `1`. Unsupported platforms or detector errors exit `2`.
+When one attached side-panel TUI is open, the command returns `"open": true`, `"control_ready": true`, and its server URL. A plain `opencode` TUI remains visible but returns `"control_ready": false`; multiple TUIs are also rejected as ambiguous. Closed UI returns `"open": false` and exits `1`. Unsupported platforms or detector errors exit `2`.
 
 The script only reads the process table. It never focuses, types into, refreshes, or closes the terminal.
 
@@ -209,6 +228,14 @@ For a fresh OpenCode install, this MCP registration is the only additional integ
 
 Start OpenCode from the same absolute project directory used by Codex. If several sessions match, tell Codex which displayed title or session ID to use.
 
+### Prompts appear in history but the side-panel model does not answer
+
+The MCP bridge is probably talking to an auto-started headless server instead of the side-panel TUI's server. Stop that delegation attempt, configure `OPENCODE_BASE_URL` and `OPENCODE_AUTO_SERVE=false`, then launch the panel with `opencode attach` as shown above. Shared session history alone is not proof of a shared live control channel.
+
+### More than one side-panel TUI is open
+
+Close the unused TUI or leave it untouched and delegate manually. The skill fails closed because the directory-scoped TUI control API cannot reliably identify which of multiple subscribers should receive a prompt.
+
 ### The skill does not appear
 
 Restart Codex and confirm `SKILL.md` exists at:
@@ -220,6 +247,7 @@ Restart Codex and confirm `SKILL.md` exists at:
 ## Safety model
 
 - Fails closed when live UI state cannot be proven.
+- Requires one TUI attached to the MCP bridge's exact server URL; never treats shared history as proof of control.
 - Uses an existing session; never creates, forks, deletes, reverts, aborts, or disposes one.
 - Keeps Codex read-only during implementation.
 - Does not commit, push, publish, deploy, or run destructive operations unless you explicitly authorize them.

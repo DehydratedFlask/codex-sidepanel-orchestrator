@@ -89,6 +89,16 @@ def is_opencode_tui(process: Process) -> bool:
     return re.search(r"\bopencode(?:\.exe|\.cmd)?[\"']?\s+(?:serve|run)\b", process.command, re.I) is None
 
 
+def attached_url(process: Process) -> str | None:
+    """Return the server URL when this TUI was started with `opencode attach`."""
+    match = re.search(
+        r"(?:^|\s)(?:[\"']?[^\s\"']*[\\/])?opencode(?:\.exe|\.cmd)?[\"']?\s+attach\s+(?:\"([^\"]+)\"|'([^']+)'|(\S+))",
+        process.command,
+        re.I,
+    )
+    return next((value for value in match.groups() if value), None) if match else None
+
+
 def has_chatgpt_ancestor(process: Process, processes: dict[int, Process]) -> bool:
     seen: set[int] = set()
     parent_id = process.ppid
@@ -165,6 +175,12 @@ def main() -> int:
 
     emit(
         {
+            "attached": [
+                {"pid": process.pid, "url": attached_url(process)}
+                for process in matches
+                if attached_url(process) is not None
+            ],
+            "control_ready": len(matches) == 1 and attached_url(matches[0]) is not None,
             "open": bool(matches),
             "reason": "live_sidepanel_tui" if matches else "no_live_sidepanel_tui",
             "processes": [asdict(process) for process in matches],

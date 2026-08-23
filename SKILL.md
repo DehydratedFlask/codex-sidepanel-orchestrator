@@ -16,14 +16,14 @@ Act as the planner and supervisor. Delegate implementation to the user's existin
    python3 <skill-directory>/scripts/detect_sidepanel_opencode.py
    ```
 
-3. Continue only when the detector exits `0` and returns `"open": true`. If it exits `1`, give the plan to the user and ask them to open OpenCode in the ChatGPT/Codex side-panel terminal. If it exits `2`, report the unsupported platform or detector error. Never launch OpenCode yourself.
-4. Confirm the OpenCode MCP tools are available. A fresh OpenCode install does not include this MCP bridge. If the tools are absent or unhealthy, stop after the plan and tell the user to run `codex mcp add opencode -- npx -y opencode-mcp`, then restart Codex. No OpenCode-side skill or plugin is required. Never install or configure it without the user's request.
+3. Continue only when the detector exits `0`, returns `"open": true`, and returns `"control_ready": true`. Control readiness means exactly one side-panel TUI exists and it was launched with `opencode attach <url>`. If the TUI is missing, unattached, or ambiguous, give the plan and the shared-server setup commands from the README. Never launch, restart, focus, or replace OpenCode yourself.
+4. Confirm the OpenCode MCP tools are available and healthy. A fresh OpenCode install does not include this MCP bridge. The bridge must use the same URL reported in `attached[0].url`, with `OPENCODE_AUTO_SERVE=false`; otherwise its auto-started server shares persisted sessions but cannot control this TUI. If tools are absent or the URLs cannot be proven equal, stop after the plan and give the shared-server setup commands. No OpenCode-side skill or plugin is required. Never install or configure it without the user's request.
 5. Use the OpenCode MCP session-list or overview tool with the repository's absolute directory. Select an existing session belonging to that directory.
    - No matching session: stop and ask the user to open one in that project.
    - One matching session: use it.
    - Multiple matching sessions: show their titles and IDs and ask the user which one to use. Do not guess.
    - Busy session: wait or report that it is busy; do not inject work blindly.
-6. Continue the selected session with the MCP `opencode_reply` tool. Do not use tools that create, fork, delete, revert, abort, or dispose sessions. Do not override the session's provider, model, variant, or agent unless the user explicitly requests it.
+6. Send the brief through the shared server's TUI controls: first `opencode_tui_append_prompt`, then `opencode_tui_submit_prompt`. These controls preserve the TUI's selected model and agent. Do not use `opencode_reply` for side-panel orchestration: it is a headless session API and may require a separate provider/model selection. Do not clear or overwrite prompt text. If the prompt is not known to be empty, stop and ask the user to clear or submit it first. Do not use tools that create, fork, delete, revert, abort, or dispose sessions.
 7. Send a compact implementation brief containing:
    - objective and user-visible outcome;
    - relevant repository context;
@@ -36,18 +36,19 @@ Act as the planner and supervisor. Delegate implementation to the user's existin
 
 ## Hard Gates
 
-Both gates must pass for every delegation:
+All three gates must pass for every delegation:
 
-- **Live UI gate:** the detector must find an interactive `opencode` process beneath the ChatGPT desktop app, using a real TTY on POSIX systems or the native Windows process tree.
+- **Live UI gate:** the detector must find exactly one interactive `opencode attach <url>` process beneath the ChatGPT desktop app, using a real TTY on POSIX systems or the native Windows process tree.
 - **Session gate:** the MCP server must expose a matching existing session for the current repository.
+- **Shared-server gate:** the MCP bridge and attached TUI must use the same OpenCode server URL, and MCP auto-serve must be disabled.
 
-Persisted MCP sessions do not prove the side panel is open. A headless `opencode serve` process does not pass the live UI gate.
+Persisted MCP sessions do not prove the side panel is open or controllable. A separate headless server may see the same session database while its TUI event channel has no side-panel subscriber.
 
 ## Safety Rules
 
 - Keep Codex operations read-only apart from communicating through the selected OpenCode session.
 - Never start a new OpenCode session, terminal, server, or replacement workflow.
-- Never focus, refresh, close, or send keystrokes to the side panel.
+- Never focus, refresh, close, or send OS-level keystrokes to the side panel. Use only the shared server's TUI API after all gates pass.
 - Never delegate secrets or unrelated repository content.
 - Never commit, push, publish, deploy, or perform destructive actions unless the user explicitly authorized them.
 - If any gate fails mid-task, stop delegation and preserve the current session.

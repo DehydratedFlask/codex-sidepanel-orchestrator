@@ -56,6 +56,26 @@ class DetectorTests(unittest.TestCase):
         )
         self.assertEqual([], processes)
 
+    def test_reports_attached_server_url(self):
+        process = detector.parse_processes(
+            "120 110 ttys002 /opt/homebrew/bin/opencode attach http://127.0.0.1:4096 --dir /tmp/project"
+        )[120]
+        self.assertEqual("http://127.0.0.1:4096", detector.attached_url(process))
+
+    def test_plain_tui_has_no_attached_server_url(self):
+        process = detector.parse_processes("120 110 ttys002 /opt/homebrew/bin/opencode")[120]
+        self.assertIsNone(detector.attached_url(process))
+
+    def test_reports_quoted_windows_attached_server_url(self):
+        process = detector.Process(
+            120,
+            110,
+            "windows",
+            '"C:\\Program Files\\OpenCode\\opencode.exe" attach "http://127.0.0.1:4096" --dir C:\\project',
+            "opencode.exe",
+        )
+        self.assertEqual("http://127.0.0.1:4096", detector.attached_url(process))
+
     def test_handles_broken_ancestry_without_looping(self):
         processes = self.find("300 301 ttys005 opencode\n301 300 ttys005 /bin/zsh\n")
         self.assertEqual([], processes)
