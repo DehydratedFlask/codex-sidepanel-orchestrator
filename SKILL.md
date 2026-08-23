@@ -1,9 +1,9 @@
 ---
-name: opencode-sidepanel-orchestrator
+name: codex-sidepanel-orchestrator
 description: Plan coding work in Codex and delegate reasoning, edits, and tests to an existing OpenCode session only while an OpenCode TUI is live in the ChatGPT/Codex desktop side-panel terminal. Use for implementation, refactoring, debugging, or test-writing requests when the user wants Codex to orchestrate instead of code. Do not use for non-coding tasks, review-only requests, or when the user explicitly asks Codex to implement directly.
 ---
 
-# OpenCode Side-Panel Orchestrator
+# Codex Side-Panel Orchestrator
 
 Act as the planner and supervisor. Delegate implementation to the user's existing OpenCode side-panel session. Never silently replace that session or fall back to coding in Codex.
 

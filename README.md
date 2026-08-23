@@ -1,4 +1,4 @@
-# OpenCode Side-Panel Orchestrator
+# Codex Side-Panel Orchestrator
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-black.svg)](#platform-support)
@@ -87,13 +87,13 @@ This command is sufficient for a fresh OpenCode setup; no OpenCode-side MCP skil
 Install globally so it is available in every project:
 
 ```bash
-npx skills add DehydratedFlask/opencode-sidepanel-orchestrator --skill opencode-sidepanel-orchestrator -g -y
+npx skills add DehydratedFlask/codex-sidepanel-orchestrator --skill codex-sidepanel-orchestrator -g -y
 ```
 
 Or omit `-g` for a project-local installation:
 
 ```bash
-npx skills add DehydratedFlask/opencode-sidepanel-orchestrator --skill opencode-sidepanel-orchestrator -y
+npx skills add DehydratedFlask/codex-sidepanel-orchestrator --skill codex-sidepanel-orchestrator -y
 ```
 
 Restart Codex after installing a new skill.
@@ -114,7 +114,7 @@ Leave that TUI open. The OpenCode MCP server must be able to see its existing se
 Explicit invocation:
 
 ```text
-Use $opencode-sidepanel-orchestrator to implement the new settings screen.
+Use $codex-sidepanel-orchestrator to implement the new settings screen.
 ```
 
 The skill also allows implicit invocation for coding work when your request makes the planner/delegator intent clear, for example:
@@ -140,13 +140,13 @@ Codex communicates through `opencode_reply`, which continues the chosen session.
 macOS or Linux:
 
 ```bash
-python3 ~/.agents/skills/opencode-sidepanel-orchestrator/scripts/detect_sidepanel_opencode.py --pretty
+python3 ~/.agents/skills/codex-sidepanel-orchestrator/scripts/detect_sidepanel_opencode.py --pretty
 ```
 
 Windows PowerShell:
 
 ```powershell
-python "$HOME\.agents\skills\opencode-sidepanel-orchestrator\scripts\detect_sidepanel_opencode.py" --pretty
+python "$HOME\.agents\skills\codex-sidepanel-orchestrator\scripts\detect_sidepanel_opencode.py" --pretty
 ```
 
 When the side-panel TUI is open, the command returns JSON with `"open": true` and exits `0`. If it is closed, it returns `"open": false` and exits `1`. Unsupported platforms or detector errors exit `2`.
@@ -158,17 +158,17 @@ The script only reads the process table. It never focuses, types into, refreshes
 macOS or Linux:
 
 ```bash
-git clone https://github.com/DehydratedFlask/opencode-sidepanel-orchestrator.git
+git clone https://github.com/DehydratedFlask/codex-sidepanel-orchestrator.git
 mkdir -p ~/.agents/skills
-cp -R opencode-sidepanel-orchestrator ~/.agents/skills/opencode-sidepanel-orchestrator
+cp -R codex-sidepanel-orchestrator ~/.agents/skills/codex-sidepanel-orchestrator
 ```
 
 Windows PowerShell:
 
 ```powershell
-git clone https://github.com/DehydratedFlask/opencode-sidepanel-orchestrator.git
+git clone https://github.com/DehydratedFlask/codex-sidepanel-orchestrator.git
 New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
-Copy-Item -Recurse opencode-sidepanel-orchestrator "$HOME\.agents\skills\opencode-sidepanel-orchestrator"
+Copy-Item -Recurse codex-sidepanel-orchestrator "$HOME\.agents\skills\codex-sidepanel-orchestrator"
 ```
 
 Restart Codex after copying the skill.
@@ -201,7 +201,7 @@ Start OpenCode from the same absolute project directory used by Codex. If severa
 Restart Codex and confirm `SKILL.md` exists at:
 
 ```text
-~/.agents/skills/opencode-sidepanel-orchestrator/SKILL.md
+~/.agents/skills/codex-sidepanel-orchestrator/SKILL.md
 ```
 
 ## Safety model
@@ -228,7 +228,7 @@ OpenAI's current desktop documentation lists the ChatGPT/Codex app for [macOS an
 ## Uninstall
 
 ```bash
-npx skills remove opencode-sidepanel-orchestrator -g -y
+npx skills remove codex-sidepanel-orchestrator -g -y
 ```
 
 Remove the MCP registration separately if you no longer use it:
