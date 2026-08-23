@@ -1,13 +1,26 @@
-# Codex Side-Panel Orchestrator
+# Codex Side-Panel Orchestrator — Delegate Coding to OpenCode
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-black.svg)](#platform-support)
 
-A Codex skill that keeps Codex in the planner's chair and delegates implementation to **your existing OpenCode side-panel session—only while that session is visibly open**.
+A cross-platform **Codex skill for OpenCode delegation** that turns Codex into a planning orchestrator and sends implementation work through **OpenCode MCP** to your existing OpenCode side-panel session—only while that session is visibly open.
 
-It does not launch OpenCode, create a replacement session, refresh the panel, or quietly fall back to Codex for coding.
+Use it to connect Codex with OpenCode for AI coding tasks, refactoring, debugging, and test generation without launching a replacement OpenCode session or quietly falling back to Codex for coding.
 
-## Why this exists
+## What is Codex Side-Panel Orchestrator?
+
+Codex Side-Panel Orchestrator is an open-source agent skill for the ChatGPT/Codex desktop app. Codex inspects the repository and creates the implementation plan; OpenCode performs the reasoning, file edits, and tests through an existing terminal session exposed by `opencode-mcp`.
+
+### Key features
+
+- **Codex-to-OpenCode delegation:** Codex plans and supervises while OpenCode implements.
+- **Existing-session only:** the skill never creates or substitutes an OpenCode coding session.
+- **OpenCode MCP integration:** continues the selected session through `opencode_reply`.
+- **Live side-panel detection:** rejects stale MCP history when the OpenCode TUI is closed.
+- **Cross-platform setup:** supports macOS and native Windows desktop workflows, with fail-closed Linux detection.
+- **Read-only orchestration:** Codex does not edit project files during delegated implementation.
+
+## Why delegate Codex coding tasks to OpenCode?
 
 OpenCode MCP can retain sessions after its terminal UI closes. Session history alone therefore cannot prove that the OpenCode session in the ChatGPT/Codex desktop side panel is still open.
 
@@ -42,7 +55,7 @@ flowchart LR
 
 `opencode-mcp` is a bridge used by Codex. You do not install a skill or plugin inside OpenCode. With the `npx` configuration below, Node downloads the bridge automatically on first use.
 
-## Quick start
+## Install the Codex OpenCode orchestrator
 
 ### 1. Install and initialize OpenCode
 
@@ -224,6 +237,28 @@ MCP servers can execute code with your account's permissions. Review third-party
 | Windows + WSL OpenCode | Detector runs, but fails closed | Not currently supported because the process ancestry crosses the VM boundary |
 
 OpenAI's current desktop documentation lists the ChatGPT/Codex app for [macOS and Windows](https://help.openai.com/en/articles/20001276-moving-to-the-new-chatgpt-desktop-app). Other operating systems remain installable but cannot delegate without a compatible desktop side-panel host.
+
+## Frequently asked questions
+
+### How do I connect Codex to OpenCode?
+
+Install and authenticate OpenCode, register `opencode-mcp` with `codex mcp add opencode -- npx -y opencode-mcp`, install this skill, and restart Codex. The [installation guide](#install-the-codex-opencode-orchestrator) contains the complete commands.
+
+### Can Codex act as an orchestrator for OpenCode?
+
+Yes. This skill keeps Codex focused on repository inspection, planning, acceptance criteria, and monitoring while an existing OpenCode session performs coding and tests.
+
+### Does the skill start a new OpenCode session?
+
+No. Both the live side-panel detector and a matching MCP session must pass before delegation. The skill never launches, creates, forks, or replaces a coding session.
+
+### Do I install `opencode-mcp` inside OpenCode?
+
+No. `opencode-mcp` is an MCP bridge configured in Codex. A fresh OpenCode installation does not need an additional OpenCode skill or plugin.
+
+### Does it work on macOS, Windows, and Linux?
+
+Installation and detection run on all three. Live delegation works with the official ChatGPT/Codex desktop host on macOS and native Windows terminals. Linux and Windows-to-WSL process boundaries fail closed when the side-panel relationship cannot be proven.
 
 ## Uninstall
 
