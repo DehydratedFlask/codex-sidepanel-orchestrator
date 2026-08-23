@@ -10,14 +10,14 @@ Act as the planner and supervisor. Delegate implementation to the user's existin
 ## Workflow
 
 1. Inspect the repository read-only and turn the request into a concrete plan with acceptance criteria and verification commands. Do not edit files.
-2. Resolve this skill's directory, then run:
+2. Resolve this skill's directory, then run the detector with the available Python 3 launcher (`python3` on macOS/Linux, usually `python` on Windows):
 
    ```bash
    python3 <skill-directory>/scripts/detect_sidepanel_opencode.py
    ```
 
 3. Continue only when the detector exits `0` and returns `"open": true`. If it exits `1`, give the plan to the user and ask them to open OpenCode in the ChatGPT/Codex side-panel terminal. If it exits `2`, report the unsupported platform or detector error. Never launch OpenCode yourself.
-4. Confirm the OpenCode MCP tools are available. If they are absent or unhealthy, stop after the plan and explain how to configure the MCP server. Never use shell automation as a substitute.
+4. Confirm the OpenCode MCP tools are available. A fresh OpenCode install does not include this MCP bridge. If the tools are absent or unhealthy, stop after the plan and tell the user to run `codex mcp add opencode -- npx -y opencode-mcp`, then restart Codex. No OpenCode-side skill or plugin is required. Never install or configure it without the user's request.
 5. Use the OpenCode MCP session-list or overview tool with the repository's absolute directory. Select an existing session belonging to that directory.
    - No matching session: stop and ask the user to open one in that project.
    - One matching session: use it.
@@ -38,7 +38,7 @@ Act as the planner and supervisor. Delegate implementation to the user's existin
 
 Both gates must pass for every delegation:
 
-- **Live UI gate:** the detector must find an interactive `opencode` process with a real TTY whose process ancestry reaches the ChatGPT desktop app.
+- **Live UI gate:** the detector must find an interactive `opencode` process beneath the ChatGPT desktop app, using a real TTY on POSIX systems or the native Windows process tree.
 - **Session gate:** the MCP server must expose a matching existing session for the current repository.
 
 Persisted MCP sessions do not prove the side panel is open. A headless `opencode serve` process does not pass the live UI gate.
@@ -54,4 +54,4 @@ Persisted MCP sessions do not prove the side panel is open. A headless `opencode
 
 ## Platform
 
-The bundled live-session detector supports macOS and the ChatGPT/Codex desktop app. On other platforms, fail closed instead of assuming a session is open.
+The detector runs on macOS, Linux, and Windows using only Python's standard library. Official ChatGPT/Codex desktop hosting is currently available on macOS and Windows. Native Windows terminals are supported; WSL processes cannot be reliably correlated to their Windows side-panel process and therefore fail closed. Linux can install and run the skill, but delegation requires a compatible ChatGPT desktop host.

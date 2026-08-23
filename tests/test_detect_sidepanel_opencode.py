@@ -60,6 +60,26 @@ class DetectorTests(unittest.TestCase):
         processes = self.find("300 301 ttys005 opencode\n301 300 ttys005 /bin/zsh\n")
         self.assertEqual([], processes)
 
+    def test_finds_native_windows_tui_beneath_chatgpt(self):
+        processes = detector.parse_windows_processes(
+            """[
+              {"ProcessId":100,"ParentProcessId":1,"Name":"ChatGPT.exe","CommandLine":"C:\\\\Program Files\\\\ChatGPT\\\\ChatGPT.exe"},
+              {"ProcessId":110,"ParentProcessId":100,"Name":"powershell.exe","CommandLine":"powershell.exe"},
+              {"ProcessId":120,"ParentProcessId":110,"Name":"opencode.exe","CommandLine":"C:\\\\Tools\\\\opencode.exe"}
+            ]"""
+        )
+        matches = detector.find_sidepanel_processes(processes)
+        self.assertEqual([120], [process.pid for process in matches])
+
+    def test_rejects_windows_mcp_server(self):
+        processes = detector.parse_windows_processes(
+            """[
+              {"ProcessId":100,"ParentProcessId":1,"Name":"ChatGPT.exe","CommandLine":"ChatGPT.exe"},
+              {"ProcessId":120,"ParentProcessId":100,"Name":"opencode.exe","CommandLine":"opencode.exe serve --port 4096"}
+            ]"""
+        )
+        self.assertEqual([], detector.find_sidepanel_processes(processes))
+
 
 if __name__ == "__main__":
     unittest.main()

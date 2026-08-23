@@ -1,7 +1,7 @@
 # OpenCode Side-Panel Orchestrator
 
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![macOS](https://img.shields.io/badge/platform-macOS-black.svg)](#requirements)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-black.svg)](#platform-support)
 
 A Codex skill that keeps Codex in the planner's chair and delegates implementation to **your existing OpenCode side-panel session—only while that session is visibly open**.
 
@@ -31,19 +31,31 @@ flowchart LR
 
 ## Requirements
 
-- macOS
-- ChatGPT/Codex desktop app with a side-panel terminal
-- [OpenCode](https://opencode.ai/) installed and authenticated
+- macOS, Windows, or Linux for installation and detection
+- ChatGPT/Codex desktop app with a side-panel terminal for live delegation
+- [OpenCode](https://opencode.ai/) installed and authenticated (a fresh install is fine)
 - [Codex](https://developers.openai.com/codex/) with MCP support
+- Git, used by the skill installer
 - Node.js 18 or newer, for `npx`
 - Python 3, for the zero-dependency live-session detector
 - [`opencode-mcp`](https://github.com/AlaeddineMessadi/opencode-mcp)
 
-The live UI detector currently targets the macOS ChatGPT desktop process hierarchy. It fails closed on unsupported platforms.
+`opencode-mcp` is a bridge used by Codex. You do not install a skill or plugin inside OpenCode. With the `npx` configuration below, Node downloads the bridge automatically on first use.
 
 ## Quick start
 
-### 1. Connect OpenCode MCP to Codex
+### 1. Install and initialize OpenCode
+
+If OpenCode is already installed, skip the installation command. The npm method works on macOS, Windows PowerShell, and Linux:
+
+```bash
+npm install -g opencode-ai
+opencode --version
+```
+
+Run `opencode` once and complete its provider authentication before delegating work. Other official installation options are listed on the [OpenCode download page](https://dev.opencode.ai/download).
+
+### 2. Connect OpenCode MCP to Codex
 
 ```bash
 codex mcp add opencode -- npx -y opencode-mcp
@@ -68,7 +80,9 @@ default_tools_approval_mode = "writes"
 
 See the official [Codex MCP documentation](https://learn.chatgpt.com/docs/extend/mcp) for configuration and trust guidance.
 
-### 2. Install the skill
+This command is sufficient for a fresh OpenCode setup; no OpenCode-side MCP skill is needed. `npx -y` fetches `opencode-mcp` when Codex starts it.
+
+### 3. Install the skill
 
 Install globally so it is available in every project:
 
@@ -84,7 +98,7 @@ npx skills add DehydratedFlask/opencode-sidepanel-orchestrator --skill opencode-
 
 Restart Codex after installing a new skill.
 
-### 3. Open the session you want Codex to use
+### 4. Open the session you want Codex to use
 
 In the ChatGPT/Codex desktop side-panel terminal:
 
@@ -95,7 +109,7 @@ opencode
 
 Leave that TUI open. The OpenCode MCP server must be able to see its existing session in the same project directory.
 
-### 4. Delegate
+### 5. Delegate
 
 Explicit invocation:
 
@@ -123,10 +137,16 @@ Codex communicates through `opencode_reply`, which continues the chosen session.
 
 ## Verify the live-session detector
 
-For a global install:
+macOS or Linux:
 
 ```bash
 python3 ~/.agents/skills/opencode-sidepanel-orchestrator/scripts/detect_sidepanel_opencode.py --pretty
+```
+
+Windows PowerShell:
+
+```powershell
+python "$HOME\.agents\skills\opencode-sidepanel-orchestrator\scripts\detect_sidepanel_opencode.py" --pretty
 ```
 
 When the side-panel TUI is open, the command returns JSON with `"open": true` and exits `0`. If it is closed, it returns `"open": false` and exits `1`. Unsupported platforms or detector errors exit `2`.
@@ -135,10 +155,20 @@ The script only reads the process table. It never focuses, types into, refreshes
 
 ## Manual installation
 
+macOS or Linux:
+
 ```bash
 git clone https://github.com/DehydratedFlask/opencode-sidepanel-orchestrator.git
 mkdir -p ~/.agents/skills
 cp -R opencode-sidepanel-orchestrator ~/.agents/skills/opencode-sidepanel-orchestrator
+```
+
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/DehydratedFlask/opencode-sidepanel-orchestrator.git
+New-Item -ItemType Directory -Force "$HOME\.agents\skills" | Out-Null
+Copy-Item -Recurse opencode-sidepanel-orchestrator "$HOME\.agents\skills\opencode-sidepanel-orchestrator"
 ```
 
 Restart Codex after copying the skill.
@@ -159,6 +189,8 @@ npx -y opencode-mcp
 ```
 
 Confirm `opencode` is on your `PATH`, then restart the desktop app. Use `Ctrl+C` to stop the second diagnostic command after it starts successfully.
+
+For a fresh OpenCode install, this MCP registration is the only additional integration step. OpenCode itself does not need an `opencode-mcp` skill.
 
 ### No matching session is found
 
@@ -181,6 +213,17 @@ Restart Codex and confirm `SKILL.md` exists at:
 - Sends only the implementation context needed for the current repository.
 
 MCP servers can execute code with your account's permissions. Review third-party MCP source and configuration before enabling it.
+
+## Platform support
+
+| System | Install and run detector | Live side-panel delegation |
+|---|---|---|
+| macOS | Yes, using `ps` and TTY ancestry | Yes |
+| Windows | Yes, using PowerShell `Win32_Process` ancestry | Yes, for native Windows terminal sessions |
+| Linux | Yes, using `ps`; fails closed when no compatible host exists | No official ChatGPT desktop host currently |
+| Windows + WSL OpenCode | Detector runs, but fails closed | Not currently supported because the process ancestry crosses the VM boundary |
+
+OpenAI's current desktop documentation lists the ChatGPT/Codex app for [macOS and Windows](https://help.openai.com/en/articles/20001276-moving-to-the-new-chatgpt-desktop-app). Other operating systems remain installable but cannot delegate without a compatible desktop side-panel host.
 
 ## Uninstall
 
