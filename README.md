@@ -126,7 +126,7 @@ Codex communicates through `opencode_reply`, which continues the chosen session.
 For a global install:
 
 ```bash
-python3 ~/.codex/skills/opencode-sidepanel-orchestrator/scripts/detect_sidepanel_opencode.py --pretty
+python3 ~/.agents/skills/opencode-sidepanel-orchestrator/scripts/detect_sidepanel_opencode.py --pretty
 ```
 
 When the side-panel TUI is open, the command returns JSON with `"open": true` and exits `0`. If it is closed, it returns `"open": false` and exits `1`. Unsupported platforms or detector errors exit `2`.
@@ -137,8 +137,8 @@ The script only reads the process table. It never focuses, types into, refreshes
 
 ```bash
 git clone https://github.com/DehydratedFlask/opencode-sidepanel-orchestrator.git
-mkdir -p ~/.codex/skills
-cp -R opencode-sidepanel-orchestrator ~/.codex/skills/opencode-sidepanel-orchestrator
+mkdir -p ~/.agents/skills
+cp -R opencode-sidepanel-orchestrator ~/.agents/skills/opencode-sidepanel-orchestrator
 ```
 
 Restart Codex after copying the skill.
@@ -169,7 +169,7 @@ Start OpenCode from the same absolute project directory used by Codex. If severa
 Restart Codex and confirm `SKILL.md` exists at:
 
 ```text
-~/.codex/skills/opencode-sidepanel-orchestrator/SKILL.md
+~/.agents/skills/opencode-sidepanel-orchestrator/SKILL.md
 ```
 
 ## Safety model
